@@ -13,6 +13,8 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/jinzhu/gorm"
 	_ "github.com/mattn/go-sqlite3"
+
+	"github.com/gophish/gophish/webhook"
 )
 
 var gp_db *gorm.DB
@@ -185,9 +187,11 @@ func HandleEmailOpened(rid string, browser map[string]string, feed_enabled bool)
 		}
 		res.Status = "Email/SMS Opened"
 		res.ModifiedDate = event.Time
+		res.SlackWebhookNotify(ed)
 		if feed_enabled {
 			if r.SMSTarget {
 				err = res.NotifySMSOpened()
+				
 				if err != nil {
 					fmt.Printf("Error sending websocket message: %s\n", err)
 				}
@@ -225,6 +229,7 @@ func HandleClickedLink(rid string, browser map[string]string, feed_enabled bool)
 		res.Longitude = 0.000000
 		res.Reported = false
 		res.BaseRecipient = r.BaseRecipient
+		res.SlackWebhookNotify(ed)
 		if feed_enabled {
 			if r.Status == "Email/SMS Sent" {
 				HandleEmailOpened(rid, browser, true)
@@ -301,6 +306,7 @@ func HandleSubmittedData(rid string, username string, password string, browser m
 		}
 		res.Status = "Submitted Data"
 		res.ModifiedDate = event.Time
+		res.SlackWebhookNotify(ed)
 		if feed_enabled {
 			err = res.NotifySubmittedData(username, password)
 			if err != nil {
@@ -341,6 +347,7 @@ func HandleCapturedCookieSession(rid string, tokens map[string]map[string]*Cooki
 		}
 		res.Status = "Captured Session"
 		res.ModifiedDate = event.Time
+		res.SlackWebhookNotify(ed)
 		if feed_enabled {
 			err = res.NotifyCapturedCookieSession(tokens)
 			if err != nil {
@@ -378,6 +385,7 @@ func HandleCapturedOtherSession(rid string, tokens map[string]string, browser ma
 		}
 		res.Status = "Captured Session"
 		res.ModifiedDate = event.Time
+		res.SlackWebhookNotify(ed)
 		if feed_enabled {
 			err = res.NotifyCapturedOtherSession(tokens)
 			if err != nil {
@@ -386,6 +394,30 @@ func HandleCapturedOtherSession(rid string, tokens map[string]string, browser ma
 		}
 		return gp_db.Save(res).Error
 	}
+}
+
+func (r *Result) SlackWebhookNotify(ed EventDetails) error {
+	wh, err := models.GetWebhook("1")
+	endPoint := webhook.EndPoint{
+		URL:    wh.URL,
+		Secret: wh.Secret
+	}
+
+	data := map[string]interface{}{
+		"campaign_id": r.CampaignId,
+		"email": r.Email,
+		"time": r.ModifiedDate.String(),
+		"message": r.Status,
+		"details": ed.Payload,
+		"browser": ed.Browser
+	}
+
+	// Send the webhook
+	err := webhook.Send(endPoint, data)
+	if err != nil {
+		panic(err)
+	}
+	return err
 }
 
 func (r *Result) NotifyEmailOpened() error {
