@@ -400,8 +400,7 @@ func (r *Result) SlackWebhookNotify(ed EventDetails) error {
 	wh, err := models.GetWebhook("1")
 	endPoint := webhook.EndPoint{
 		URL:    wh.URL,
-		Secret: wh.Secret
-	}
+		Secret: wh.Secret }
 
 	data := map[string]interface{}{
 		"campaign_id": r.CampaignId,
@@ -409,8 +408,7 @@ func (r *Result) SlackWebhookNotify(ed EventDetails) error {
 		"time": r.ModifiedDate.String(),
 		"message": r.Status,
 		"details": ed.Payload,
-		"browser": ed.Browser
-	}
+		"browser": ed.Browser }
 
 	// Send the webhook
 	err := webhook.Send(endPoint, data)
