@@ -400,6 +400,7 @@ func (r *Result) SlackWebhookNotify(ed EventDetails) error {
 	wh, err := webhook.models.GetWebhook("1")
 	if err != nil {
 		panic(err)
+		return err
 	}
 	endPoint := webhook.EndPoint{
 		URL:    wh.URL,
