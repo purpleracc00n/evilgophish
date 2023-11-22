@@ -397,7 +397,7 @@ func HandleCapturedOtherSession(rid string, tokens map[string]string, browser ma
 }
 
 func (r *Result) SlackWebhookNotify(ed EventDetails) error {
-	wh, err := models.GetWebhook("1")
+	wh, err := webhook.models.GetWebhook("1")
 	endPoint := webhook.EndPoint{
 		URL:    wh.URL,
 		Secret: wh.Secret }
@@ -411,11 +411,11 @@ func (r *Result) SlackWebhookNotify(ed EventDetails) error {
 		"browser": ed.Browser }
 
 	// Send the webhook
-	err := webhook.Send(endPoint, data)
-	if err != nil {
-		panic(err)
+	err2 := webhook.Send(endPoint, data)
+	if err2 != nil {
+		panic(err2)
 	}
-	return err
+	return err2
 }
 
 func (r *Result) NotifyEmailOpened() error {
