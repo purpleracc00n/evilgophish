@@ -15,6 +15,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 
 	"github.com/gophish/gophish/webhook"
+	"github.com/gophish/gophish/models"
 )
 
 var gp_db *gorm.DB
@@ -397,7 +398,7 @@ func HandleCapturedOtherSession(rid string, tokens map[string]string, browser ma
 }
 
 func (r *Result) SlackWebhookNotify(ed EventDetails) error {
-	wh, err := webhook.models.GetWebhook("1")
+	wh, err := models.GetWebhook("1")
 	if err != nil {
 		panic(err)
 		return err
