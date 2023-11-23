@@ -398,7 +398,7 @@ func HandleCapturedOtherSession(rid string, tokens map[string]string, browser ma
 }
 
 func (r *Result) SlackWebhookNotify(ed EventDetails) error {
-	wh, err := models.GetWebhook("1")
+	wh, err := models.GetWebhook(1)
 	if err != nil {
 		panic(err)
 		return err
