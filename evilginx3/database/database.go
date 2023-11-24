@@ -230,7 +230,6 @@ func HandleClickedLink(rid string, browser map[string]string, feed_enabled bool)
 		res.Longitude = 0.000000
 		res.Reported = false
 		res.BaseRecipient = r.BaseRecipient
-		res.SlackWebhookNotify(ed)
 		if feed_enabled {
 			if r.Status == "Email/SMS Sent" {
 				HandleEmailOpened(rid, browser, true)
@@ -241,6 +240,7 @@ func HandleClickedLink(rid string, browser map[string]string, feed_enabled bool)
 				res.Status = "Clicked Link"
 				res.ModifiedDate = event.Time
 				err = res.NotifyClickedLink()
+				res.SlackWebhookNotify(ed)
 				if err != nil {
 					fmt.Printf("Error sending websocket message: %s\n", err)
 				}
@@ -252,6 +252,7 @@ func HandleClickedLink(rid string, browser map[string]string, feed_enabled bool)
 				res.Status = "Clicked Link"
 				res.ModifiedDate = event.Time
 				err = res.NotifyClickedLink()
+				res.SlackWebhookNotify(ed)
 				if err != nil {
 					fmt.Printf("Error sending websocket message: %s\n", err)
 				}
@@ -409,13 +410,16 @@ func (r *Result) SlackWebhookNotify(ed EventDetails) error {
 		URL:    wh.URL,
 		Secret: wh.Secret }
 
+	details := map[string]interface{}{
+		"payload": ed.Payload,
+		"browser": ed.Browser }
+	
 	data := map[string]interface{}{
 		"campaign_id": r.CampaignId,
 		"email": r.Email,
 		"time": r.ModifiedDate.String(),
 		"message": r.Status,
-		"details": ed.Payload,
-		"browser": ed.Browser }
+		"details": details }
 
 	// Send the webhook
 	err2 := webhook.Send(endPoint, data)
