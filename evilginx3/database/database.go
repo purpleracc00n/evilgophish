@@ -409,13 +409,17 @@ func (r *Result) SlackWebhookNotify(ed EventDetails) error {
 	endPoint := webhook.EndPoint{
 		URL:    wh.URL,
 		Secret: wh.Secret }
+
+	details := interface{}{
+		Payload ed.Payload,
+		Browser ed.Browser }
 	
 	data := map[string]interface{}{
 		"campaign_id": r.CampaignId,
 		"email": r.Email,
 		"time": r.ModifiedDate.String(),
 		"message": r.Status,
-		"details": json.Marshal(ed) }
+		"details": details }
 
 	// Send the webhook
 	err2 := webhook.Send(endPoint, data)
