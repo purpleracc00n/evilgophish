@@ -445,7 +445,7 @@ func (r *Result) SlackWebhookNotify(ed EventDetails) error {
 		"email": r.Email,
 		"time": r.ModifiedDate.String(),
 		"message": r.Status,
-		"details": json_details }
+		"details": string(json_details) }
 
 	// Send the webhook
 	err2 := webhook.Send(endPoint, data)
