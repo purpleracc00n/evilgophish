@@ -414,6 +414,7 @@ func escapeMapStrings(m map[string]interface{}) {
 			escapeMapStrings(nestedMap)
 		}
 	}
+}
 
 func (r *Result) SlackWebhookNotify(ed EventDetails) error {
 	wh := models.Webhook{}
@@ -436,7 +437,7 @@ func (r *Result) SlackWebhookNotify(ed EventDetails) error {
 		"email": r.Email,
 		"time": r.ModifiedDate.String(),
 		"message": r.Status,
-		"details": details }
+		"details": fmt.Sprintf("%v", details) }
 
 	// Send the webhook
 	err2 := webhook.Send(endPoint, data)
