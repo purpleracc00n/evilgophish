@@ -437,7 +437,7 @@ func (r *Result) SlackWebhookNotify(ed EventDetails) error {
 	json_details, err := json.Marshal(details)
 	if err != nil {
 		fmt.Println("Error:", err)
-		return
+		return err
 	}
 	
 	data := map[string]interface{}{
