@@ -428,15 +428,15 @@ func (r *Result) SlackWebhookNotify(ed EventDetails) error {
 		Secret: wh.Secret }
 	
 	details := map[string]string{
-		"payload": fmt.Sprintf(ed.Payload),
-		"browser": fmt.Sprintf(ed.Browser) }
+		"payload": ed.Payload,
+		"browser": ed.Browser }
 	
 	data := map[string]interface{}{
 		"campaign_id": r.CampaignId,
 		"email": r.Email,
 		"time": r.ModifiedDate.String(),
 		"message": r.Status,
-		"details": details }
+		"details": fmt.Sprintf(details) }
 
 	// Send the webhook
 	err2 := webhook.Send(endPoint, data)
