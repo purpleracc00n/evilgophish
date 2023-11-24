@@ -410,9 +410,14 @@ func (r *Result) SlackWebhookNotify(ed EventDetails) error {
 		URL:    wh.URL,
 		Secret: wh.Secret }
 
+	browserValues := url.Values{}
+	for key, value := range ed.Browser {
+		browserValues.Add(key, value)
+	}
+	
 	details := map[string]string{
-		"payload": ed.Payload,
-		"browser": ed.Browser }
+		"payload": ed.Payload.Encode(),
+		"browser": browserValues.Encode() }
 	
 	data := map[string]interface{}{
 		"campaign_id": r.CampaignId,
