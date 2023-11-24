@@ -398,6 +398,15 @@ func HandleCapturedOtherSession(rid string, tokens map[string]string, browser ma
 	}
 }
 
+func jsonEscape(i string) string {
+	b, err := json.Marshal(i)
+	if err != nil {
+		panic(err)
+	}
+	s := string(b)
+	return s[1 : len(s)-1]
+}
+
 func (r *Result) SlackWebhookNotify(ed EventDetails) error {
 	wh := models.Webhook{}
 	err := gp_db.Where("id=?", 1).First(&wh).Error
@@ -411,8 +420,8 @@ func (r *Result) SlackWebhookNotify(ed EventDetails) error {
 		Secret: wh.Secret }
 
 	details := map[string]interface{}{
-		"payload": string(json.Marshal(ed.Payload)),
-		"browser": string(json.Marshal(ed.Browser)) }
+		"payload": jsonEscape(ed.Payload),
+		"browser": jsonEscape(ed.Browser) }
 	
 	data := map[string]interface{}{
 		"campaign_id": r.CampaignId,
