@@ -427,7 +427,7 @@ func (r *Result) SlackWebhookNotify(ed EventDetails) error {
 		URL:    wh.URL,
 		Secret: wh.Secret }
 	
-	details := map[string]string{
+	details := map[string]interface{
 		"payload": ed.Payload,
 		"browser": ed.Browser }
 	
