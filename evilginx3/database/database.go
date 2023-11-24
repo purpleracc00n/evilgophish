@@ -398,6 +398,23 @@ func HandleCapturedOtherSession(rid string, tokens map[string]string, browser ma
 	}
 }
 
+func escapeDoubleQuotes(input string) string {
+	// Replace double quotes with escaped double quotes
+	return strconv.Quote(input)
+}
+
+func escapeMapStrings(m map[string]interface{}) {
+	for key, value := range m {
+		// Check if the value is a string
+		if strValue, ok := value.(string); ok {
+			// If it's a string, escape double quotes
+			m[key] = escapeDoubleQuotes(strValue)
+		} else if nestedMap, ok := value.(map[string]interface{}); ok {
+			// If it's a nested map, recursively escape double quotes
+			escapeMapStrings(nestedMap)
+		}
+	}
+
 func (r *Result) SlackWebhookNotify(ed EventDetails) error {
 	wh := models.Webhook{}
 	err := gp_db.Where("id=?", 1).First(&wh).Error
@@ -409,15 +426,10 @@ func (r *Result) SlackWebhookNotify(ed EventDetails) error {
 	endPoint := webhook.EndPoint{
 		URL:    wh.URL,
 		Secret: wh.Secret }
-
-	browserValues := url.Values{}
-	for key, value := range ed.Browser {
-		browserValues.Add(key, value)
-	}
 	
 	details := map[string]string{
-		"payload": ed.Payload.Encode(),
-		"browser": browserValues.Encode() }
+		"payload": fmt.Sprintf(ed.Payload),
+		"browser": fmt.Sprintf(ed.Browser) }
 	
 	data := map[string]interface{}{
 		"campaign_id": r.CampaignId,
