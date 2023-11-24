@@ -412,7 +412,7 @@ func (r *Result) SlackWebhookNotify(ed EventDetails) error {
 
 	details := map[string]interface{}{
 		"payload": string(json.Marshal(ed.Payload)),
-		"details": string(json.Marshal(ed.Browser)) }
+		"browser": string(json.Marshal(ed.Browser)) }
 	
 	data := map[string]interface{}{
 		"campaign_id": r.CampaignId,
