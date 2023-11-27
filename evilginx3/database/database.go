@@ -188,7 +188,6 @@ func HandleEmailOpened(rid string, browser map[string]string, feed_enabled bool)
 		}
 		res.Status = "Email/SMS Opened"
 		res.ModifiedDate = event.Time
-		res.SlackWebhookNotify(ed)
 		if feed_enabled {
 			if r.SMSTarget {
 				err = res.NotifySMSOpened()
@@ -203,6 +202,7 @@ func HandleEmailOpened(rid string, browser map[string]string, feed_enabled bool)
 				}
 			}
 		}
+		res.SlackWebhookNotify(ed)
 		if r.Status == "Clicked Link" || r.Status == "Submitted Data" || r.Status == "Captured Session" {
 			return nil
 		}
@@ -266,6 +266,7 @@ func HandleClickedLink(rid string, browser map[string]string, feed_enabled bool)
 				}
 				res.Status = "Clicked Link"
 				res.ModifiedDate = event.Time
+				res.SlackWebhookNotify(ed)
 			} else {
 				event, err := res.createEvent("Clicked Link", ed)
 				if err != nil {
@@ -273,6 +274,7 @@ func HandleClickedLink(rid string, browser map[string]string, feed_enabled bool)
 				}
 				res.Status = "Clicked Link"
 				res.ModifiedDate = event.Time
+				res.SlackWebhookNotify(ed)
 			}
 		}
 		if r.Status == "Submitted Data" || r.Status == "Captured Session" {
@@ -308,13 +310,13 @@ func HandleSubmittedData(rid string, username string, password string, browser m
 		}
 		res.Status = "Submitted Data"
 		res.ModifiedDate = event.Time
-		res.SlackWebhookNotify(ed)
 		if feed_enabled {
 			err = res.NotifySubmittedData(username, password)
 			if err != nil {
 				fmt.Printf("Error sending websocket message: %s\n", err)
 			}
 		}
+		res.SlackWebhookNotify(ed)
 		if r.Status == "Captured Session" {
 			return nil
 		}
@@ -349,13 +351,13 @@ func HandleCapturedCookieSession(rid string, tokens map[string]map[string]*Cooki
 		}
 		res.Status = "Captured Session"
 		res.ModifiedDate = event.Time
-		res.SlackWebhookNotify(ed)
 		if feed_enabled {
 			err = res.NotifyCapturedCookieSession(tokens)
 			if err != nil {
 				fmt.Printf("Error sending websocket message: %s\n", err)
 			}
 		}
+		res.SlackWebhookNotify(ed)
 		return gp_db.Save(res).Error
 	}
 }
@@ -387,41 +389,24 @@ func HandleCapturedOtherSession(rid string, tokens map[string]string, browser ma
 		}
 		res.Status = "Captured Session"
 		res.ModifiedDate = event.Time
-		res.SlackWebhookNotify(ed)
 		if feed_enabled {
 			err = res.NotifyCapturedOtherSession(tokens)
 			if err != nil {
 				fmt.Printf("Error sending websocket message: %s\n", err)
 			}
 		}
+		res.SlackWebhookNotify(ed)
 		return gp_db.Save(res).Error
 	}
 }
 
-func escapeDoubleQuotes(input string) string {
-	// Replace double quotes with escaped double quotes
-	return strconv.Quote(input)
-}
-
-func escapeMapStrings(m map[string]interface{}) {
-	for key, value := range m {
-		// Check if the value is a string
-		if strValue, ok := value.(string); ok {
-			// If it's a string, escape double quotes
-			m[key] = escapeDoubleQuotes(strValue)
-		} else if nestedMap, ok := value.(map[string]interface{}); ok {
-			// If it's a nested map, recursively escape double quotes
-			escapeMapStrings(nestedMap)
-		}
-	}
-}
 
 func (r *Result) SlackWebhookNotify(ed EventDetails) error {
 	wh := models.Webhook{}
 	err := gp_db.Where("id=?", 1).First(&wh).Error
 	
 	if err != nil {
-		panic(err)
+		fmt.Println("Error when querying DB: ", err)
 		return err
 	}
 	endPoint := webhook.EndPoint{
@@ -436,7 +421,7 @@ func (r *Result) SlackWebhookNotify(ed EventDetails) error {
 	// Convert map to JSON-formatted string
 	json_details, err := json.Marshal(details)
 	if err != nil {
-		fmt.Println("Error:", err)
+		fmt.Println("Error when marshalling details field: ", err)
 		return err
 	}
 	
@@ -450,7 +435,7 @@ func (r *Result) SlackWebhookNotify(ed EventDetails) error {
 	// Send the webhook
 	err2 := webhook.Send(endPoint, data)
 	if err2 != nil {
-		panic(err2)
+		fmt.Println("Error when sending webhook data: ", err2)
 	}
 	return err2
 }
